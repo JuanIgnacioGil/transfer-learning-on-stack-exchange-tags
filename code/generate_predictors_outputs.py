@@ -1,7 +1,9 @@
 import json
-import pickle
-import numpy as np
 import time
+import deepdish as dd
+import scipy.sparse as sp
+
+hfile='../data/data.h5'
 
 # Read the json file
 with open('../data/data.json') as json_data:
@@ -44,44 +46,31 @@ l_content = len(all_content)
 # For each row, generate a vector of binary outputs (one for each tag)
 # and of binary predictors (one for word in title, one for word in content)
 t0 = time.time()
-predictors = []
-outputs = []
+predictors = sp.lil_matrix((l_data, l_title+l_content))
+outputs = sp.lil_matrix((l_data, l_tags))
 
 for x, nd in zip(data, range(l_data)):
-
-    # Generate output vector
-    x_outputs = np.zeros(l_tags)
+#for x, nd in zip(data[:100], range(100)):
 
     for t, n in zip(all_tags, range(l_tags)):
         if t in x['tags']:
-            x_outputs[n] = 1
-
-    # Generate predictor vector
-
-    x_predictors = np.zeros(l_title + l_content)
+            outputs[nd, n] = 1
 
     for w, n in zip(all_title, range(l_title)):
         if w in x['title']:
-            x_predictors[n] = 1
+            predictors[nd, n] = 1
 
     for w, n in zip(all_content, range(l_content)):
         if w in x['content']:
-            x_predictors[l_title + n] = 1
+            predictors[nd, l_title + n] = 1
 
-    predictors.append(x_predictors)
-    outputs.append(x_outputs)
-
-    # If the index is evenly divisible by 100, print a message
-    if (nd + 1) % 100 == 0:
+    # If the index is evenly divisible by 500, print a message
+    if (nd + 1) % 500 == 0:
         p = int((100 * (nd + 1) / l_data))
         elapsed = time.time() - t0
         remaining = int(elapsed * (l_data - nd - 1) / (60 * (nd + 1)))
         print('{}% calculated. {} minutes remaining'.format(p, remaining))
 
-
-# Save arrays to picke file
-with open('../data/model_data.pickle', 'wb') as f:  # Python 3: open(..., 'wb')
-    pickle.dump([predictors, outputs], f)
 
 # Save list of unique tags and words
 unique_words = {
@@ -90,5 +79,11 @@ unique_words = {
         'content': list(all_content)
     }
 
-with open('../data/unique_words.json', 'w') as outfile:
-    json.dump(unique_words, outfile, sort_keys=False, indent=4)
+
+dd.io.save(hfile, {
+    'outputs': outputs.tocsr(),
+    'predictors': predictors.tocsr(),
+    'tags': list(all_tags),
+    'title': list(all_title),
+    'content': list(all_content)
+    })
