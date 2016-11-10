@@ -1,0 +1,39 @@
+from sklearn.naive_bayes import BernoulliNB
+#from sklearn.model_selection import KFold
+import deepdish as dd
+import scipy.sparse as sp
+import time
+
+# Read data
+X = dd.io.load('../data/data.h5','/predictors')
+Y = dd.io.load('../data/data.h5','/outputs')
+
+n_tags=Y.shape[1]
+
+# Cross validation
+#k_fold = KFold(n_splits=3)
+
+#Fit the Naive Bayes Method
+clf = [BernoulliNB() for tag in range(n_tags)]
+t0 = time.time()
+
+for tag in range(n_tags):
+    clf[tag].fit(X, Y[:,tag].toarray().ravel())
+    BernoulliNB(alpha=1.0, binarize=None, class_prior=None, fit_prior=True)
+
+    # If the index is evenly divisible by 100, print a message
+    if (tag + 1) % 100 == 0:
+        p = int((100 * (tag + 1) / n_tags))
+        elapsed = time.time() - t0
+        remaining = int(elapsed * (n_tags - tag - 1) / (60 * (tag + 1)))
+        print('{}% calculated. {} minutes remaining'.format(p, remaining))
+
+
+Yp=[0] * n_tags
+
+for tag in range(n_tags):
+    Yp[tag]=clf[tag].predict(X[1,:])
+
+
+
+print(Yp)
