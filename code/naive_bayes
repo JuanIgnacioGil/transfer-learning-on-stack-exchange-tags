@@ -1,8 +1,8 @@
 from sklearn.naive_bayes import BernoulliNB
-#from sklearn.model_selection import KFold
+from sklearn.model_selection import train_test_split
 import deepdish as dd
-import scipy.sparse as sp
 import time
+import numpy as np
 
 # Read data
 X = dd.io.load('../data/data.h5','/predictors')
@@ -10,42 +10,41 @@ Y = dd.io.load('../data/data.h5','/outputs')
 
 n_tags=Y.shape[1]
 
-# Cross validation
-#k_fold = KFold(n_splits=3)
+#Generate train and validation
+X_train, X_validation, y_train, y_validation = train_test_split(X, Y, test_size=0.25, random_state=0)
+
 
 #Fit the Naive Bayes Method
-clf = [BernoulliNB() for tag in range(n_tags)]
+clf = BernoulliNB()
 t0 = time.time()
+y_predict=np.zeros(y_validation.shape)
 
 for tag in range(n_tags):
-    clf[tag].fit(X, Y[:,tag].toarray().ravel())
-    BernoulliNB(alpha=1.0, binarize=None, class_prior=None, fit_prior=True)
+    clf.fit(X_train, y_train[:,tag].toarray().ravel())
 
-    # If the index is evenly divisible by 100, print a message
-    if (tag + 1) % 100 == 0:
+    #Predict
+    y_predict[:,tag] = clf.predict(X_validation)
+
+    # If the index is evenly divisible by 200, print a message
+    if (tag + 1) % 200 == 0:
         p = int((100 * (tag + 1) / n_tags))
         elapsed = time.time() - t0
         remaining = int(elapsed * (n_tags - tag - 1) / (60 * (tag + 1)))
         print('{}% calculated. {} minutes remaining'.format(p, remaining))
 
 
-#save
+#Evaluate
+true_positives=0
+predicted_positives=0
+actual_positives=0
 
-# Predict
-for k in range(100):
-    Yp = [0] * n_tags
-    Yk = Y[k,:].to_array()
+for r in y_validation.shape[0]:
+    true_positives += sum([a * b for a, b in zip(y_predict[r,:],y_validation[r,:])])
+    predicted_positives += sum(y_predict[r,:])
+    actual_positives += sum(y_validation[r,:])
 
-    for tag in range(n_tags):
-        Yp[tag]=clf[tag].predict(X[k,:])
+precision = true_positives / predicted_positives
+recall = true_positives / actual_positives
+F1 = 2 * precision * recall / (precision + recall)
 
-
-    #Evaluate
-    true_positives = sum([a*b for a,b in zip(Yp,Yk)])
-    predicted_positives = sum(Yp)
-    actual_positives = sum(Yk)
-    precision = true_positives / predicted_positives
-    recall = true_positives / actual_positives
-    F1 = 2 * precision * recall / (precision + recall)
-
-    print('F1[{}]: {}'.format(k,F1))
+print('F1: {}'.format(F1))
