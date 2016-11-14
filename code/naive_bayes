@@ -38,10 +38,11 @@ true_positives=0
 predicted_positives=0
 actual_positives=0
 
-for r in y_validation.shape[0]:
-    true_positives += sum([a * b for a, b in zip(y_predict[r,:],y_validation[r,:])])
+for r in range(y_validation.shape[0]):
+    yvr = y_validation[r,:].toarray().ravel()
+    true_positives += sum([a * b for a, b in zip(y_predict[r,:],yvr)])
     predicted_positives += sum(y_predict[r,:])
-    actual_positives += sum(y_validation[r,:])
+    actual_positives += sum(yvr)
 
 precision = true_positives / predicted_positives
 recall = true_positives / actual_positives
