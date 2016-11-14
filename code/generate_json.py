@@ -17,7 +17,6 @@ physicsTable = pd.read_csv('../data/test.csv', header=0)
 
 # clean data using BeautifulSoup and Regex. First define functions:
 
-
 clean_titles = []
 clean_content = []
 clean_tags = []
