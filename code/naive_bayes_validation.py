@@ -7,6 +7,7 @@ import numpy as np
 # Read data
 X = dd.io.load('../data/data.h5','/predictors')
 Y = dd.io.load('../data/data.h5','/outputs')
+tags = dd.io.load('../data/data.h5','/tags')
 
 n_tags=Y.shape[1]
 
@@ -54,4 +55,13 @@ print('precision: {}'.format(precision))
 print('recall: {}'.format(recall))
 print('F1: {}'.format(F1))
 
-#
+
+#Generate list of tags for comparation
+for r in range(y_validation.shape[0]):
+    indices = np.nonzero(y_predict[r,:])
+    predicted_tags = tags[indices]
+
+    actual_indices = np.nonzero(y_validation[r,:].toarray())
+    actual_tags = tags[actual_indices]
+
+    print('{} -> {}'.format(actual_tags,predicted_tags))
