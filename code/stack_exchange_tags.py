@@ -3,10 +3,20 @@ from sklearn.model_selection import train_test_split
 import deepdish as dd
 import time
 import numpy as np
+import pandas as pd
 import os
+import csv
 
 
 class StackExchangeTags:
+
+    @property
+    def model(self):
+        return self._model
+
+    @model.setter
+    def model(self, value):
+        self._model = value
 
     def __init__(self):
         pass
@@ -22,6 +32,16 @@ class StackExchangeTags:
         x_train, x_validation, y_train, y_validation = train_test_split(x, y, test_size=0.25, random_state=0)
 
         return x_train, x_validation, y_train, y_validation
+
+    @staticmethod
+    def tests_sets(train_file, test_file):
+
+        # Read data
+        x_train = dd.io.load(train_file, '/predictors')
+        y_train = dd.io.load(train_file, '/outputs').toarray()
+        x_test = dd.io.load(test_file, '/predictors').toarray()
+
+        return x_train, y_train, x_test
 
     @staticmethod
     def naive_bayes(x_train, y_train, x_test):
@@ -104,3 +124,35 @@ class StackExchangeTags:
                 out.write('{} -> {}\n'.format(actual_tags, predicted_tags))
 
         return f1, precision, recall
+
+    @staticmethod
+    def generate_submission(y_predict, train_file, test_csv_file, submission):
+
+        tags = dd.io.load(train_file, '/tags')
+
+        # Load ids from csv file
+        # TODO: Store id in h5 file, so that we don't need the csv
+        # Read the csv file
+        physicsTable = pd.read_csv(test_csv_file, header=0, index_col='id')
+        id = [record['id'] for record in physicsTable]
+
+        # Generate list of tags for comparing
+
+        # Remove the output file if there is an old one
+        try:
+            os.remove(submission)
+        except OSError:
+            pass
+
+        with open(submission, 'a') as s:
+
+            writer = csv.writer(s, delimiter=',', lineterminator='\r\n', quoting=csv.QUOTE_NONNUMERIC)
+            writer.writerow(['id', 'tags'])
+
+            for r in range(y_predict.shape[0]):
+                predicted_tags = [t for (t, x) in zip(tags, y_predict[r, :]) if int(round(x)) is 1]
+                row_id = id[r]
+
+                writer.writerow([row_id, predicted_tags])
+
+            s.close()
