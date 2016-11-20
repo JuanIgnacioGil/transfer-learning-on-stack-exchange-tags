@@ -3,7 +3,6 @@ import deepdish as dd
 import pandas as pd
 import os
 import csv
-from naive_bayes import NaiveBayes
 
 
 class StackExchangeTags:

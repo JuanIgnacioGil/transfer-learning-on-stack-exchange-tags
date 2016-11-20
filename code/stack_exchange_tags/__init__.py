@@ -1,2 +1,0 @@
-from naive_bayes import NaiveBayes
-from stack_exchange_tags import StackExchangeTags
