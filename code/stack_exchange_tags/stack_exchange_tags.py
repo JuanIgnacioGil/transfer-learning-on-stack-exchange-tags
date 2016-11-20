@@ -1,28 +1,25 @@
-from sklearn.naive_bayes import BernoulliNB
 from sklearn.model_selection import train_test_split
 import deepdish as dd
-import time
-import numpy as np
 import pandas as pd
 import os
 import csv
+from naive_bayes import NaiveBayes
 
 
 class StackExchangeTags:
 
-    @property
-    def model(self):
-        return self._model
+    def __init__(self, **kwargs):
 
-    @model.setter
-    def model(self, value):
-        self._model = value
+        self.train_file = kwargs.get('train_file', '')
+        self.validation_file = kwargs.get('validation_file', '')
+        self.test_file = kwargs.get('test_file', '')
+        self.test_json_file = kwargs.get('test_json_file', '')
+        self.test_csv_file = kwargs.get('test_csv_file', '')
+        self.submission = kwargs.get('test_submission', '')
 
-    def __init__(self):
-        pass
+    def validation_sets(self, **kwargs):
 
-    @staticmethod
-    def validation_sets(train_file):
+        train_file = kwargs.get('train_file', self.train_file)
 
         # Read data
         x = dd.io.load(train_file, '/predictors')
@@ -33,8 +30,10 @@ class StackExchangeTags:
 
         return x_train, x_validation, y_train, y_validation
 
-    @staticmethod
-    def tests_sets(train_file, test_file):
+    def tests_sets(self, **kwargs):
+
+        train_file = kwargs.get('train_file', self.train_file)
+        test_file = kwargs.get('test_file', self.test_file)
 
         # Read data
         x_train = dd.io.load(train_file, '/predictors')
@@ -43,54 +42,26 @@ class StackExchangeTags:
 
         return x_train, y_train, x_test
 
-    @staticmethod
-    def naive_bayes(x_train, y_train, x_test):
+    def validate(self, **kwargs):
 
-        t_rows = x_test.shape[0]
-        n_tags = y_train.shape[1]
-
-        # Fit the Naive Bayes Method
-        clf = BernoulliNB()
-        t0 = time.time()
-        y_predict = np.zeros((t_rows, n_tags))
-        y_prob = np.zeros((t_rows, n_tags))
-
-        for tag in range(n_tags):
-            clf.fit(x_train, y_train[:, tag])
-
-            # Predict
-            ytp = clf.predict(x_test)
-            ytp[np.isnan(ytp)] = 0
-            y_predict[:, tag] = ytp
-
-            # Probabilities
-            prob = clf.predict_log_proba(x_test)
-            y_prob[:, tag] = prob[:, 1]
-
-            # If the index is evenly divisible by 200, print a message
-            if (tag + 1) % 200 == 0:
-                p = int((100 * (tag + 1) / n_tags))
-                elapsed = time.time() - t0
-                remaining = int(elapsed * (n_tags - tag - 1) / (60 * (tag + 1)))
-                print('{}% calculated. {} minutes remaining'.format(p, remaining))
-
-        # Make sure that we get at least one tag
-        max_prob = np.argmax(y_prob, axis=1)
-
-        for r in range(y_predict.shape[0]):
-            y_predict[r, max_prob[r]] = 1
-
-        return y_predict
-
-    @staticmethod
-    def validate(y_predict, y_validation, train_file, output_file):
+        train_file = kwargs.get('train_file', self.train_file)
+        validation_file = kwargs.get('validation_file', self.validation_file)
 
         tags = dd.io.load(train_file, '/tags')
+
+        # Generate validation sets
+        x_train, x_validation, y_train, y_validation = self.validation_sets(train_file=train_file)
+
+        # Fit model
+        n_tags = y_validation.shape[1]
+        model = NaiveBayes(n_tags)
+        model.fit(x_train, y_train)
 
         # Evaluate
         true_positives = 0
         predicted_positives = 0
         actual_positives = 0
+        y_predict = model.predict(x_validation)
 
         for r in range(y_validation.shape[0]):
             yvr = y_validation[r, :]
@@ -111,11 +82,11 @@ class StackExchangeTags:
 
         # Remove the output file if there is an old one
         try:
-            os.remove(output_file)
+            os.remove(validation_file)
         except OSError:
             pass
 
-        with open(output_file, 'a') as out:
+        with open(validation_file, 'a') as out:
 
             for r in range(y_validation.shape[0]):
                 predicted_tags = [t for (t, x) in zip(tags, y_predict[r, :]) if int(round(x)) is 1]
@@ -125,8 +96,12 @@ class StackExchangeTags:
 
         return f1, precision, recall
 
-    @staticmethod
-    def generate_submission(y_predict, train_file, test_csv_file, submission):
+    def generate_submission(self, **kwargs):
+
+        train_file = kwargs.get('train_file', self.train_file)
+        test_file = kwargs.get('test_file', self.test_file)
+        test_csv_file = kwargs.get('test_csv_file', self.test_csv_file)
+        submission = kwargs.get('submission', self.submission)
 
         tags = dd.io.load(train_file, '/tags')
 
@@ -134,9 +109,18 @@ class StackExchangeTags:
         # TODO: Store id in h5 file, so that we don't need the csv
         # Read the csv file
         physicsTable = pd.read_csv(test_csv_file, header=0, index_col='id')
-        id = [record['id'] for record in physicsTable]
+        se_id = [record['id'] for record in physicsTable]
 
-        # Generate list of tags for comparing
+        # Generate train and test sets
+        x_train, y_train, x_test = self.tests_sets(train_file=train_file, test_file=test_file)
+
+        # Fit model
+        n_tags = y_train.shape[1]
+        model = NaiveBayes(n_tags)
+        model.fit(x_train, y_train)
+
+        # Evaluate
+        y_predict = model.predict(x_test)
 
         # Remove the output file if there is an old one
         try:
@@ -151,7 +135,7 @@ class StackExchangeTags:
 
             for r in range(y_predict.shape[0]):
                 predicted_tags = [t for (t, x) in zip(tags, y_predict[r, :]) if int(round(x)) is 1]
-                row_id = id[r]
+                row_id = se_id[r]
 
                 writer.writerow([row_id, predicted_tags])
 

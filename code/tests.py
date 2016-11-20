@@ -21,11 +21,10 @@ elif test == 'NaiveBayesTest':
     x_train, y_train, x_test = stex.tests_sets(train_file, test_file)
 
 
-    y_predict = []
     x_groups = np.array_split(x_test, 10)
-    y_predict = np.matrix()
+    y_predict = np.empty((1, y_train.shape[1]))
 
     for group in x_groups:
-            y_predict.concatenate(stex.naive_bayes(x_train, y_train, group))
+            y_predict = np.concatenate(y_predict, stex.naive_bayes(x_train, y_train, group))
 
     stex.generate_submission(y_predict, train_file, test_json_file, submission)
