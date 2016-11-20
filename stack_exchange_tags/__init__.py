@@ -1,2 +1,0 @@
-from naive_bayes import NaiveBayes
-from validate_and_test import StackExchangeTags

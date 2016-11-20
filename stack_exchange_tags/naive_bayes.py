@@ -1,7 +1,7 @@
-import time
+from time import time
 from sklearn.naive_bayes import BernoulliNB
 import numpy as np
-
+from stack_exchange_tags.iter_message import IterMessage
 
 class NaiveBayes:
     def __init__(self, n_tags):
@@ -13,24 +13,21 @@ class NaiveBayes:
 
         # Fit the Naive Bayes Method
         self.model = []
-        t0 = time.time()
+
+        m = IterMessage(self.n_tags, 'calibrated', 300)
 
         for tag in range(self.n_tags):
             self.model.append(BernoulliNB())
             self.model[tag].fit(x_train, y_train[:, tag])
 
             # If the index is evenly divisible by 200, print a message
-            if (tag + 1) % 200 == 0:
-                p = int((100 * (tag + 1) / self.n_tags))
-                elapsed = time.time() - t0
-                remaining = int(elapsed * (self.n_tags - tag - 1) / (60 * (tag + 1)))
-                print('{}% calibrated. {} minutes remaining'.format(p, remaining))
+            m.print_message(tag)
 
 
     def predict(self, x):
 
         t_rows = x.shape[0]
-        t0 = time.time()
+        m = IterMessage(self.n_tags, 'calculated', 300)
         y_predict = np.zeros((t_rows, self.n_tags))
         y_prob = np.zeros((t_rows, self.n_tags))
 
@@ -44,11 +41,7 @@ class NaiveBayes:
             y_prob[:, tag] = prob[:, 1]
 
             # If the index is evenly divisible by 200, print a message
-            if (tag + 1) % 200 == 0:
-                p = int((100 * (tag + 1) / self.n_tags))
-                elapsed = time.time() - t0
-                remaining = int(elapsed * (self.n_tags - tag - 1) / (60 * (tag + 1)))
-                print('{}% calculated. {} minutes remaining'.format(p, remaining))
+            m.print_message(tag)
 
         # Make sure that we get at least one tag
         max_prob = np.argmax(y_prob, axis=1)

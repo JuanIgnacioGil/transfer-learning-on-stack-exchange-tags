@@ -3,6 +3,8 @@ import deepdish as dd
 import pandas as pd
 import os
 import csv
+from stack_exchange_tags.naive_bayes import NaiveBayes
+from stack_exchange_tags.iter_message import IterMessage
 
 
 class StackExchangeTags:
@@ -85,6 +87,8 @@ class StackExchangeTags:
         except OSError:
             pass
 
+        m = IterMessage(y_validation.shape[0], 'tags generated', 300)
+
         with open(validation_file, 'a') as out:
 
             for r in range(y_validation.shape[0]):
@@ -92,6 +96,7 @@ class StackExchangeTags:
                 actual_tags = [t for (t, x) in zip(tags, y_validation[r, :]) if int(round(x)) is 1]
 
                 out.write('{} -> {}\n'.format(actual_tags, predicted_tags))
+                m.print_message(r)
 
         return f1, precision, recall
 
@@ -107,8 +112,8 @@ class StackExchangeTags:
         # Load ids from csv file
         # TODO: Store id in h5 file, so that we don't need the csv
         # Read the csv file
-        physicsTable = pd.read_csv(test_csv_file, header=0, index_col='id')
-        se_id = [record['id'] for record in physicsTable]
+        physics_table = pd.read_csv(test_csv_file, header=0, index_col='id')
+        se_id = [record['id'] for record in physics_table]
 
         # Generate train and test sets
         x_train, y_train, x_test = self.tests_sets(train_file=train_file, test_file=test_file)
@@ -129,6 +134,7 @@ class StackExchangeTags:
 
         with open(submission, 'a') as s:
 
+            m = IterMessage(y_predict.shape[0], 'tags generated', 300)
             writer = csv.writer(s, delimiter=',', lineterminator='\r\n', quoting=csv.QUOTE_NONNUMERIC)
             writer.writerow(['id', 'tags'])
 
@@ -137,5 +143,6 @@ class StackExchangeTags:
                 row_id = se_id[r]
 
                 writer.writerow([row_id, predicted_tags])
+                m.print_message(r)
 
             s.close()
