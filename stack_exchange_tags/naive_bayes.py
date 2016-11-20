@@ -1,7 +1,7 @@
-from time import time
 from sklearn.naive_bayes import BernoulliNB
 import numpy as np
 from stack_exchange_tags.iter_message import IterMessage
+import scipy.sparse as sp
 
 class NaiveBayes:
     def __init__(self, n_tags):
@@ -28,8 +28,8 @@ class NaiveBayes:
 
         t_rows = x.shape[0]
         m = IterMessage(self.n_tags, 'calculated', 300)
-        y_predict = np.zeros((t_rows, self.n_tags))
-        y_prob = np.zeros((t_rows, self.n_tags))
+        y_predict = sp.lil_matrix((t_rows, self.n_tags))
+        y_prob = np.empty((t_rows, self.n_tags))
 
         for tag in range(self.n_tags):
 
@@ -38,7 +38,7 @@ class NaiveBayes:
 
             # Probabilities
             prob = self.model[tag].predict_log_proba(x)
-            y_prob[:, tag] = prob[:, 1]
+            y_prob[:, tag] = np.append(y_prob, prob[:, 1], axis=1)
 
             # If the index is evenly divisible by 200, print a message
             m.print_message(tag)

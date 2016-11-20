@@ -113,7 +113,7 @@ class StackExchangeTags:
         # TODO: Store id in h5 file, so that we don't need the csv
         # Read the csv file
         physics_table = pd.read_csv(test_csv_file, header=0, index_col='id')
-        se_id = [record['id'] for record in physics_table]
+        se_id=physics_table.index
 
         # Generate train and test sets
         x_train, y_train, x_test = self.tests_sets(train_file=train_file, test_file=test_file)
@@ -140,7 +140,7 @@ class StackExchangeTags:
 
             for r in range(y_predict.shape[0]):
                 predicted_tags = [t for (t, x) in zip(tags, y_predict[r, :]) if int(round(x)) is 1]
-                row_id = se_id[r]
+                row_id = str(se_id[r])
 
                 writer.writerow([row_id, predicted_tags])
                 m.print_message(r)

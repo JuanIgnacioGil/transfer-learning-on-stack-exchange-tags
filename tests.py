@@ -12,8 +12,8 @@ s = stex(
 )
 
 #Validate
-s.validate()
+#s.validate()
 
 #Test
-#s.generate_submission()
+s.generate_submission()
 
