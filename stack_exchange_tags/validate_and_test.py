@@ -5,6 +5,7 @@ import os
 import csv
 from stack_exchange_tags.naive_bayes import NaiveBayes
 from stack_exchange_tags.iter_message import IterMessage
+import numpy as np
 
 
 class StackExchangeTags:
@@ -16,7 +17,7 @@ class StackExchangeTags:
         self.test_file = kwargs.get('test_file', '')
         self.test_json_file = kwargs.get('test_json_file', '')
         self.test_csv_file = kwargs.get('test_csv_file', '')
-        self.submission = kwargs.get('test_submission', '')
+        self.submission = kwargs.get('submission', '')
 
     def validation_sets(self, **kwargs):
 
@@ -123,9 +124,6 @@ class StackExchangeTags:
         model = NaiveBayes(n_tags)
         model.fit(x_train, y_train)
 
-        # Evaluate
-        y_predict = model.predict(x_test)
-
         # Remove the output file if there is an old one
         try:
             os.remove(submission)
@@ -134,12 +132,15 @@ class StackExchangeTags:
 
         with open(submission, 'a') as s:
 
-            m = IterMessage(y_predict.shape[0], 'tags generated', 300)
+            m = IterMessage(x_test.shape[0], 'tags generated', 300)
             writer = csv.writer(s, delimiter=',', lineterminator='\r\n', quoting=csv.QUOTE_NONNUMERIC)
             writer.writerow(['id', 'tags'])
 
-            for r in range(y_predict.shape[0]):
-                predicted_tags = [t for (t, x) in zip(tags, y_predict[r, :]) if int(round(x)) is 1]
+            for r in range(x_test.shape[0]):
+
+                xr = np.matrix(x_test[r, :])
+                y_predict = model.predict(xr)
+                predicted_tags = [t for (t, x) in zip(tags, y_predict) if int(round(x)) is 1]
                 row_id = str(se_id[r])
 
                 writer.writerow([row_id, predicted_tags])

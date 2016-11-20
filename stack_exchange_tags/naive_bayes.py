@@ -1,7 +1,7 @@
 from sklearn.naive_bayes import BernoulliNB
 import numpy as np
 from stack_exchange_tags.iter_message import IterMessage
-import scipy.sparse as sp
+import tables
 
 class NaiveBayes:
     def __init__(self, n_tags):
@@ -28,7 +28,7 @@ class NaiveBayes:
 
         t_rows = x.shape[0]
         m = IterMessage(self.n_tags, 'calculated', 300)
-        y_predict = sp.lil_matrix((t_rows, self.n_tags))
+        y_predict = np.empty((t_rows, self.n_tags))
         y_prob = np.empty((t_rows, self.n_tags))
 
         for tag in range(self.n_tags):
