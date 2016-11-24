@@ -11,6 +11,8 @@ s = stex(
     submission=os.path.join(dir,'data/submission.csv'),
 )
 
+#s.generate_predictors_test()
+
 #Validate
 #s.validate()
 

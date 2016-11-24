@@ -38,7 +38,7 @@ class NaiveBayes:
 
             # Probabilities
             prob = self.model[tag].predict_log_proba(x)
-            y_prob[:, tag] = np.append(y_prob, prob[:, 1], axis=1)
+            y_prob[:, tag] = prob[:, 1]
 
             # If the index is evenly divisible by 200, print a message
             m.print_message(tag)

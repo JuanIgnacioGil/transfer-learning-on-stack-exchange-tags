@@ -143,7 +143,7 @@ class StackExchangeTags:
 
                 xr = np.matrix(x_test[r, :])
                 y_predict = model.predict(xr)
-                predicted_tags = [t for (t, x) in zip(tags, y_predict) if int(round(x)) is 1]
+                predicted_tags = [t for (t, x) in zip(tags, y_predict[0].tolist()) if int(round(x)) is 1]
                 row_id = str(se_id[r])
 
                 writer.writerow([row_id, predicted_tags])
@@ -169,7 +169,7 @@ class StackExchangeTags:
         num_records = physics_table.shape[0]
         m = IterMessage(num_records, 'processed to json', 1000)
 
-        for record in physics_table.index:
+        for record, nr in zip(physics_table.index, range(num_records)):
 
             this_record = {
                 'id': str(record),
@@ -201,7 +201,7 @@ class StackExchangeTags:
         # For each row, generate a vector of binary outputs (one for each tag)
         # and of binary predictors (one for word in title, one for word in content)
         predictors = sp.lil_matrix((l_data, l_title + l_content))
-        m = IterMessage(l_data, 'tags generated', 500)
+        m = IterMessage(l_data, 'predictor rows created', 500)
 
         for x, nd in zip(data, range(l_data)):
             # for x, nd in zip(data[:100], range(100)):
