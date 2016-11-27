@@ -21,6 +21,7 @@ class StackExchangeTags:
         self.test_json_file = kwargs.get('test_json_file', '')
         self.test_csv_file = kwargs.get('test_csv_file', '')
         self.submission = kwargs.get('submission', '')
+        self.batch_size = kwargs.get('batch_size', 1000)
 
     def validation_sets(self, **kwargs):
 
@@ -110,6 +111,7 @@ class StackExchangeTags:
         test_file = kwargs.get('test_file', self.test_file)
         test_csv_file = kwargs.get('test_csv_file', self.test_csv_file)
         submission = kwargs.get('submission', self.submission)
+        batch_size = kwargs.get('batch_size', self.batch_size)
 
         tags = dd.io.load(train_file, '/tags')
 
@@ -133,21 +135,27 @@ class StackExchangeTags:
         except OSError:
             pass
 
+        #Predict
+        n_rows = x_test.shape[0]
+
         with open(submission, 'a') as s:
 
-            m = IterMessage(x_test.shape[0], 'tags generated', 300)
+            r = 0
+            m = IterMessage(n_rows, 'tags generated', 1000)
             writer = csv.writer(s, delimiter=',', lineterminator='\r\n', quoting=csv.QUOTE_NONNUMERIC)
             writer.writerow(['id', 'tags'])
 
-            for r in range(x_test.shape[0]):
+            while r < n_rows:
+                y_predict = model.predict(x_test[r:r + batch_size, :], verbose=False)
 
-                xr = np.matrix(x_test[r, :])
-                y_predict = model.predict(xr)
-                predicted_tags = [t for (t, x) in zip(tags, y_predict[0].tolist()) if int(round(x)) is 1]
-                row_id = str(se_id[r])
+                for s in range(y_predict.shape[0]):
+                    predicted_tags = [t for (t, x) in zip(tags, y_predict[s, :]) if int(round(x)) is 1]
+                    row_id = str(se_id[r+s])
 
-                writer.writerow([row_id, predicted_tags])
-                m.print_message(r)
+                    writer.writerow([row_id, predicted_tags])
+                    m.print_message(r+s)
+
+                r += batch_size
 
             s.close()
 

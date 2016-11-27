@@ -23,13 +23,12 @@ class NaiveBayes:
             # If the index is evenly divisible by 200, print a message
             m.print_message(tag)
 
-
-    def predict(self, x):
+    def predict(self, x, verbose=True):
 
         t_rows = x.shape[0]
-        m = IterMessage(self.n_tags, 'calculated', 300)
         y_predict = np.empty((t_rows, self.n_tags))
         y_prob = np.empty((t_rows, self.n_tags))
+        m = IterMessage(self.n_tags, 'calculated', 300)
 
         for tag in range(self.n_tags):
 
@@ -41,7 +40,8 @@ class NaiveBayes:
             y_prob[:, tag] = prob[:, 1]
 
             # If the index is evenly divisible by 200, print a message
-            m.print_message(tag)
+            if verbose:
+                m.print_message(tag)
 
         # Make sure that we get at least one tag
         max_prob = np.argmax(y_prob, axis=1)
