@@ -1,9 +1,10 @@
 import json
-import time
 import deepdish as dd
 import scipy.sparse as sp
+from stack_exchange_tags.iter_message import IterMessage
+from scipy.sparse import hstack
 
-hfile='../data/data.h5'
+hfile = '../data/data.h5'
 
 # Read the json file
 with open('../data/data.json') as json_data:
@@ -19,7 +20,7 @@ for x in data:
     all_tags_list += x['tags']
 
 
-all_tags = set(all_tags_list)
+all_tags = list(set(all_tags_list))
 l_tags = len(all_tags)
 
 # List of all possible words in titles
@@ -29,7 +30,7 @@ for x in data:
     all_title_list += x['title']
 
 
-all_title = set(all_title_list)
+all_title = list(set(all_title_list))
 l_title = len(all_title)
 
 # List of all possible words in content
@@ -39,49 +40,45 @@ for x in data:
     all_content_list += x['content']
 
 
-all_content = set(all_content_list)
+all_content = list(set(all_content_list))
 l_content = len(all_content)
 
 
-# For each row, generate a vector of binary outputs (one for each tag)
-# and of binary predictors (one for word in title, one for word in content)
-t0 = time.time()
-predictors = sp.lil_matrix((l_data, l_title+l_content))
-outputs = sp.lil_matrix((l_data, l_tags))
+# For each tag, generate ann output and a vector of binary predictors
+# (one for word in title, one for word in content)
+m = IterMessage(l_data, 'processed', 500)
+predictors = sp.lil_matrix((0, l_title+l_content))
+outputs = []
 
 for x, nd in zip(data, range(l_data)):
-#for x, nd in zip(data[:100], range(100)):
 
-    for t, n in zip(all_tags, range(l_tags)):
-        if t in x['tags']:
-            outputs[nd, n] = 1
+    predictors_t = sp.lil_matrix((1, l_title + l_content))
 
-    for w, n in zip(all_title, range(l_title)):
-        if w in x['title']:
-            predictors[nd, n] = 1
+    for w in x['title']:
+        index = all_title.index(w)
+        predictors_t[0, index] = 1
 
-    for w, n in zip(all_content, range(l_content)):
-        if w in x['content']:
-            predictors[nd, l_title + n] = 1
+    for w in x['content']:
+        index = all_content.index(w)
+        predictors_t[0, index] = 1
+
+    for t in x['tags']:
+        index = all_tags.index(t)
+        outputs.append(index)
+        predictors = hstack((predictors, predictors_t))
 
     # If the index is evenly divisible by 500, print a message
-    if (nd + 1) % 500 == 0:
-        p = int((100 * (nd + 1) / l_data))
-        elapsed = time.time() - t0
-        remaining = int(elapsed * (l_data - nd - 1) / (60 * (nd + 1)))
-        print('{}% calculated. {} minutes remaining'.format(p, remaining))
-
+    m.print_message(nd)
 
 # Save list of unique tags and words
 unique_words = {
-        'tags': list(all_tags),
-        'title': list(all_title),
-        'content': list(all_content)
+        'tags': all_tags,
+        'title': all_title,
+        'content': all_content
     }
 
-
 dd.io.save(hfile, {
-    'outputs': outputs.tocsr(),
+    'outputs': outputs,
     'predictors': predictors.tocsr(),
     'tags': list(all_tags),
     'title': list(all_title),
