@@ -9,14 +9,14 @@ s = stex(
     test_json_file=os.path.join(wdir, 'data/test.json'),
     test_csv_file=os.path.join(wdir, 'data/test.csv'),
     submission=os.path.join(wdir, 'data/submission.csv'),
-    batch_size=1000,
+    n=2,
 )
 
 #s.generate_predictors_test()
 
 #Validate
-#s.validate()
+s.validate()
 
 #Test
-s.generate_submission()
+#s.generate_submission()
 

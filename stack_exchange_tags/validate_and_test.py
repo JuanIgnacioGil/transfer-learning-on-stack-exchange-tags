@@ -5,8 +5,7 @@ import os
 import csv
 from stack_exchange_tags.naive_bayes import NaiveBayes
 from stack_exchange_tags.iter_message import IterMessage
-from stack_exchange_tags.generate_wordlists import GenerateWordLists as wl
-import numpy as np
+from stack_exchange_tags.generate_wordlists import GenerateWordLists as Wl
 import json
 import scipy.sparse as sp
 
@@ -21,7 +20,7 @@ class StackExchangeTags:
         self.test_json_file = kwargs.get('test_json_file', '')
         self.test_csv_file = kwargs.get('test_csv_file', '')
         self.submission = kwargs.get('submission', '')
-        self.batch_size = kwargs.get('batch_size', 1000)
+        self.n = kwargs.get('n', 2)
 
     def validation_sets(self, **kwargs):
 
@@ -29,7 +28,7 @@ class StackExchangeTags:
 
         # Read data
         x = dd.io.load(train_file, '/predictors')
-        y = dd.io.load(train_file, '/outputs').toarray()
+        y = dd.io.load(train_file, '/outputs')
 
         # Generate train and validation
         x_train, x_validation, y_train, y_validation = train_test_split(x, y, test_size=0.25, random_state=0)
@@ -52,6 +51,7 @@ class StackExchangeTags:
 
         train_file = kwargs.get('train_file', self.train_file)
         validation_file = kwargs.get('validation_file', self.validation_file)
+        n = kwargs.get('n', self.n)
 
         tags = dd.io.load(train_file, '/tags')
 
@@ -67,7 +67,7 @@ class StackExchangeTags:
         true_positives = 0
         predicted_positives = 0
         actual_positives = 0
-        y_predict = model.predict(x_validation)
+        y_predict = model.predict(x_validation, n)
 
         for r in range(y_validation.shape[0]):
             yvr = y_validation[r, :]
@@ -97,8 +97,8 @@ class StackExchangeTags:
         with open(validation_file, 'a') as out:
 
             for r in range(y_validation.shape[0]):
-                predicted_tags = [t for (t, x) in zip(tags, y_predict[r, :]) if int(round(x)) is 1]
-                actual_tags = [t for (t, x) in zip(tags, y_validation[r, :]) if int(round(x)) is 1]
+                predicted_tags = tags[y_predict[r, :]]
+                actual_tags = tags[y_validation[r, :]]
 
                 out.write('{} -> {}\n'.format(actual_tags, predicted_tags))
                 m.print_message(r)
@@ -111,7 +111,7 @@ class StackExchangeTags:
         test_file = kwargs.get('test_file', self.test_file)
         test_csv_file = kwargs.get('test_csv_file', self.test_csv_file)
         submission = kwargs.get('submission', self.submission)
-        batch_size = kwargs.get('batch_size', self.batch_size)
+        n = kwargs.get('n', self.n)
 
         tags = dd.io.load(train_file, '/tags')
 
@@ -135,27 +135,22 @@ class StackExchangeTags:
         except OSError:
             pass
 
-        #Predict
+        # Predict
         n_rows = x_test.shape[0]
+        y_predict = model.predict(x_test, n)
 
         with open(submission, 'a') as s:
 
-            r = 0
             m = IterMessage(n_rows, 'tags generated', 1000)
             writer = csv.writer(s, delimiter=',', lineterminator='\r\n', quoting=csv.QUOTE_NONNUMERIC)
             writer.writerow(['id', 'tags'])
 
-            while r < n_rows:
-                y_predict = model.predict(x_test[r:r + batch_size, :], verbose=False)
+            for r in range(n_rows):
 
-                for s in range(y_predict.shape[0]):
-                    predicted_tags = [t for (t, x) in zip(tags, y_predict[s, :]) if int(round(x)) is 1]
-                    row_id = str(se_id[r+s])
-
-                    writer.writerow([row_id, predicted_tags])
-                    m.print_message(r+s)
-
-                r += batch_size
+                predicted_tags = tags[y_predict[r, :]]
+                row_id = str(se_id[r])
+                writer.writerow([row_id, predicted_tags])
+                m.print_message(r)
 
             s.close()
 
@@ -182,8 +177,8 @@ class StackExchangeTags:
             this_record = {
                 'id': str(record),
                 'topic': 'physics',
-                'title': wl.titles_to_wordlist(physics_table['title'][record], remove_stopwords=True),
-                'content': wl.content_to_wordlist(physics_table['content'][record], remove_stopwords=True),
+                'title': Wl.titles_to_wordlist(physics_table['title'][record], remove_stopwords=True),
+                'content': Wl.content_to_wordlist(physics_table['content'][record], remove_stopwords=True),
                 'tags': []
             }
 

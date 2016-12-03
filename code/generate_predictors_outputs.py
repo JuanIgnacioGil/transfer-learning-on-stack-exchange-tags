@@ -2,9 +2,16 @@ import json
 import deepdish as dd
 import scipy.sparse as sp
 from stack_exchange_tags.iter_message import IterMessage
-from scipy.sparse import hstack
+from scipy.sparse import vstack
+import os
 
 hfile = '../data/data.h5'
+
+# Remove the output file if there is an old one
+try:
+    os.remove(hfile)
+except OSError:
+    pass
 
 # Read the json file
 with open('../data/data.json') as json_data:
@@ -65,7 +72,7 @@ for x, nd in zip(data, range(l_data)):
     for t in x['tags']:
         index = all_tags.index(t)
         outputs.append(index)
-        predictors = hstack((predictors, predictors_t))
+        predictors = vstack((predictors, predictors_t))
 
     # If the index is evenly divisible by 500, print a message
     m.print_message(nd)
