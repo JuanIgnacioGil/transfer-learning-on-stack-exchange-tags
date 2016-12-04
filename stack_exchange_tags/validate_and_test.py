@@ -65,7 +65,7 @@ class StackExchangeTags:
         model.fit(x_train, y_train)
 
         # Evaluate
-        y_predict = model.predict(x_validation, n)
+        y_predict = model.predict(x_validation, 1)
         lyv = y_validation.shape[0]
         predicted_positives = len(y_predict)
         actual_positives = lyv + 1

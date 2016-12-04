@@ -16,7 +16,7 @@ class NaiveBayes:
     def predict(self, x, n):
 
         # Probabilities
-        y_prob = self.model.predict_log_proba(x).tolist()
+        y_prob = self.model.predict_log_proba(x)
 
         # Look for the n bigger
         return np.argsort(y_prob, axis=1)[:, -n:]
