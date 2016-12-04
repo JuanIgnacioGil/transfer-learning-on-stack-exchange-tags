@@ -54,7 +54,6 @@ l_content = len(all_content)
 # For each tag, generate ann output and a vector of binary predictors
 # (one for word in title, one for word in content)
 m = IterMessage(l_data, 'processed', 500)
-predictors = sp.lil_matrix((0, l_title+l_content))
 outputs = []
 
 for x, nd in zip(data, range(l_data)):
@@ -67,27 +66,25 @@ for x, nd in zip(data, range(l_data)):
 
     for w in x['content']:
         index = all_content.index(w)
-        predictors_t[0, index] = 1
+        predictors_t[0, l_title + index] = 1
 
     for t in x['tags']:
         index = all_tags.index(t)
         outputs.append(index)
-        predictors = vstack((predictors, predictors_t))
+
+        if nd == 0:
+            predictors = predictors_t
+        else:
+            predictors = vstack([predictors, predictors_t])
 
     # If the index is evenly divisible by 500, print a message
     m.print_message(nd)
 
-# Save list of unique tags and words
-unique_words = {
-        'tags': all_tags,
-        'title': all_title,
-        'content': all_content
-    }
-
+# Save the results to the file
 dd.io.save(hfile, {
     'outputs': outputs,
     'predictors': predictors.tocsr(),
-    'tags': list(all_tags),
-    'title': list(all_title),
-    'content': list(all_content)
+    'tags': all_tags,
+    'title': all_title,
+    'content': all_content
     })
