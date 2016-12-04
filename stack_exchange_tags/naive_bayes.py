@@ -1,4 +1,5 @@
 from sklearn.naive_bayes import BernoulliNB
+import numpy as np
 
 
 class NaiveBayes:
@@ -18,4 +19,4 @@ class NaiveBayes:
         y_prob = self.model.predict_log_proba(x).tolist()
 
         # Look for the n bigger
-        return y_prob.argsort(axis=1)[:, -n:]
+        return np.argsort(y_prob, axis=1)[:, -n:]

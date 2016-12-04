@@ -8,6 +8,7 @@ from stack_exchange_tags.iter_message import IterMessage
 from stack_exchange_tags.generate_wordlists import GenerateWordLists as Wl
 import json
 import scipy.sparse as sp
+import numpy as np
 
 
 class StackExchangeTags:
@@ -28,10 +29,10 @@ class StackExchangeTags:
 
         # Read data
         x = dd.io.load(train_file, '/predictors')
-        y = dd.io.load(train_file, '/outputs')
+        y = np.array(dd.io.load(train_file, '/outputs'))
 
         # Generate train and validation
-        x_train, x_validation, y_train, y_validation = train_test_split(x, y, test_size=0.25, random_state=0)
+        x_train, x_validation, y_train, y_validation = train_test_split(x, y[3:], test_size=0.25, random_state=0)
 
         return x_train, x_validation, y_train, y_validation
 
@@ -64,17 +65,18 @@ class StackExchangeTags:
         model.fit(x_train, y_train)
 
         # Evaluate
-        true_positives = 0
-        predicted_positives = 0
-        actual_positives = 0
         y_predict = model.predict(x_validation, n)
+        lyv = y_validation.shape[0]
+        predicted_positives = len(y_predict)
+        actual_positives = lyv + 1
+        true_positives = 0
 
-        for r in range(y_validation.shape[0]):
-            yvr = y_validation[r, :]
-            ypr = y_predict[r, :]
-            true_positives += sum([a * b for a, b in zip(ypr, yvr)])
-            predicted_positives += sum(ypr)
-            actual_positives += sum(yvr)
+        for r in range(lyv):
+            yvr = y_validation[r]
+            ypr = y_predict[r]
+            true_positives += (yvr == ypr)
+            predicted_positives += ypr
+            actual_positives += yvr
 
         precision = true_positives / predicted_positives
         recall = true_positives / actual_positives
@@ -92,13 +94,13 @@ class StackExchangeTags:
         except OSError:
             pass
 
-        m = IterMessage(y_validation.shape[0], 'tags generated', 300)
+        m = IterMessage(lyv, 'tags generated', 300)
 
         with open(validation_file, 'a') as out:
 
-            for r in range(y_validation.shape[0]):
-                predicted_tags = tags[y_predict[r, :]]
-                actual_tags = tags[y_validation[r, :]]
+            for r in range(lyv):
+                predicted_tags = tags[y_predict[r]]
+                actual_tags = tags[y_validation[r]]
 
                 out.write('{} -> {}\n'.format(actual_tags, predicted_tags))
                 m.print_message(r)
