@@ -59,7 +59,7 @@ class StackExchangeTags:
         x_train, x_validation, y_train, y_validation = self.validation_sets(train_file=train_file)
 
         # Fit model
-        n_tags = y_validation.shape[1]
+        n_tags = len(y_validation)
         model = NaiveBayes(n_tags)
         model.fit(x_train, y_train)
 

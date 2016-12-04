@@ -55,6 +55,7 @@ l_content = len(all_content)
 # (one for word in title, one for word in content)
 m = IterMessage(l_data, 'processed', 500)
 outputs = []
+predictors = []
 
 for x, nd in zip(data, range(l_data)):
 
@@ -72,7 +73,7 @@ for x, nd in zip(data, range(l_data)):
         index = all_tags.index(t)
         outputs.append(index)
 
-        if nd == 0:
+        if predictors == []:
             predictors = predictors_t
         else:
             predictors = vstack([predictors, predictors_t])
