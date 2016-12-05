@@ -66,17 +66,15 @@ class StackExchangeTags:
 
         # Evaluate
         y_predict = model.predict(x_validation, 1)
+
         lyv = y_validation.shape[0]
         predicted_positives = len(y_predict)
-        actual_positives = lyv + 1
+        actual_positives = len(y_predict)
         true_positives = 0
 
         for r in range(lyv):
-            yvr = y_validation[r]
-            ypr = y_predict[r]
-            true_positives += (yvr == ypr)
-            predicted_positives += ypr
-            actual_positives += yvr
+            true_positives += (y_validation[r] == y_predict[r])
+
 
         precision = true_positives / predicted_positives
         recall = true_positives / actual_positives
