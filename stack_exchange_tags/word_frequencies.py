@@ -3,6 +3,8 @@ import deepdish as dd
 from stack_exchange_tags.iter_message import IterMessage
 import os
 import nltk
+import csv
+import pandas as pd
 
 
 class WordFrequencies:
@@ -14,6 +16,7 @@ class WordFrequencies:
         self.validation_file = kwargs.get('validation_file')
         self.test_hfile = kwargs.get('test_hfile')
         self.test_json = kwargs.get('test_json')
+        self.test_csv_file = kwargs.get('test_csv_file')
 
     def generate_word_frequencies(self, **kwargs):
 
@@ -168,7 +171,9 @@ class WordFrequencies:
 
             for x, r in zip(frequencies, range(lf)):
                 actual_tags = x['tags']
-                predicted_tags = [k for k in x['all'].keys()][:2]
+                words = x['all'].most_common(2)[:2]
+
+                predicted_tags = [k[0] for k in words]
 
                 predicted_positives += 2
                 actual_positives += len(actual_tags)
@@ -190,5 +195,42 @@ class WordFrequencies:
 
         return f1, precision, recall
 
+    def generate_submission(self, **kwargs):
+
+        train_file = kwargs.get('test_hfile', self.test_hfile)
+        submission = kwargs.get('submission', self.submission)
+        test_csv_file = kwargs.get('test_csv_file', self.test_csv_file)
+
+        # Read data
+        frequencies = dd.io.load(train_file, '/frequencies')
+
+        # Read the csv file
+        physics_table = pd.read_csv(test_csv_file, header=0, index_col='id')
+        se_id = physics_table.index
+
+        # Remove the output file if there is an old one
+        try:
+            os.remove(submission)
+        except OSError:
+            pass
+
+        # Generate submission
+
+        lf = len(frequencies)
+        m = IterMessage(lf, 'tags generated', 1000)
+
+        with open(submission, 'a') as s:
+
+            writer = csv.writer(s, delimiter=',', lineterminator='\r\n', quoting=csv.QUOTE_NONNUMERIC)
+            writer.writerow(['id', 'tags'])
+
+            for x, r in zip(frequencies, range(lf)):
+
+                words = x['all'].most_common(2)[:2]
+                predicted_tags = [k[0] for k in words]
+
+                row_id = str(se_id[r])
+                writer.writerow([row_id, ' '.join(predicted_tags)])
+                m.print_message(r)
 
 

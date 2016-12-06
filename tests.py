@@ -8,14 +8,15 @@ s = WF(
     submission = os.path.join(wdir,'data/submission.csv'),
     validation_file = os.path.join(wdir, 'data/frequencies_validation_output.csv'),
     test_hfile = os.path.join(wdir, 'data/test.h5'),
-    test_json = os.path.join(wdir, 'data/test.json')
+    test_json = os.path.join(wdir, 'data/test.json'),
+    test_csv_file = os.path.join(wdir, 'data/test.csv'),
 )
 
 #s.generate_predictors_test()
-s.generate_word_test()
+#s.generate_word_test()
 
 #Validate
 #s.validate()
 
 #Test
-#s.generate_submission()
+s.generate_submission()
