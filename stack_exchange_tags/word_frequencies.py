@@ -4,11 +4,16 @@ from stack_exchange_tags.iter_message import IterMessage
 import os
 import nltk
 
+
 class WordFrequencies:
 
     def __init__(self, **kwargs):
         self.hfile = kwargs.get('hfile')
         self.json_data = kwargs.get('json_data')
+        self.submission = kwargs.get('submission')
+        self.validation_file = kwargs.get('validation_file')
+        self.test_hfile = kwargs.get('test_hfile')
+        self.test_json = kwargs.get('test_json')
 
     def generate_word_frequencies(self, **kwargs):
 
@@ -34,9 +39,7 @@ class WordFrequencies:
         for x in data:
             all_tags_list += x['tags']
 
-
         all_tags = nltk.FreqDist(all_tags_list)
-        l_tags = len(all_tags)
 
         # List of all possible words in titles
         all_title_list = []
@@ -44,9 +47,7 @@ class WordFrequencies:
         for x in data:
             all_title_list += x['title']
 
-
         all_title = nltk.FreqDist(all_title_list)
-        l_title = len(all_title)
 
         # List of all possible words in content
         all_content_list = []
@@ -54,16 +55,12 @@ class WordFrequencies:
         for x in data:
             all_content_list += x['content']
 
-
         all_content = nltk.FreqDist(all_content_list)
-        l_content = len(all_content)
-
 
         # For each tag, generate ann output and a vector of binary predictors
         # (one for word in title, one for word in content)
         m = IterMessage(l_data, 'processed', 500)
         frequencies = []
-
 
         for x, nd in zip(data, range(l_data)):
 
@@ -86,4 +83,112 @@ class WordFrequencies:
             'content': all_content
             })
 
-    def higher_frequency_as_tag():
+    def generate_word_test(self, **kwargs):
+
+        test_hfile = kwargs.get('test_hfile', self.test_hfile)
+        test_json = kwargs.get('test_json', self.test_json)
+
+        # Remove the output file if there is an old one
+        try:
+            os.remove(test_hfile)
+        except OSError:
+            pass
+
+        # Read the json file
+        with open(test_json) as t:
+            data = json.load(t)
+            t.close()
+
+        l_data = len(data)
+
+        # List of all possible words in titles
+        all_title_list = []
+
+        for x in data:
+            all_title_list += x['title']
+
+        all_title = nltk.FreqDist(all_title_list)
+
+        # List of all possible words in content
+        all_content_list = []
+
+        for x in data:
+            all_content_list += x['content']
+
+        all_content = nltk.FreqDist(all_content_list)
+
+        # For each tag, generate ann output and a vector of binary predictors
+        # (one for word in title, one for word in content)
+        m = IterMessage(l_data, 'processed', 500)
+        frequencies = []
+
+        for x, nd in zip(data, range(l_data)):
+
+            this_frequencies = dict()
+            this_frequencies['title'] = nltk.FreqDist(x['title'])
+            this_frequencies['content'] = nltk.FreqDist(x['content'])
+            this_frequencies['all'] = nltk.FreqDist(x['title'] + x['content'])
+
+            frequencies.append(this_frequencies)
+
+            # If the index is evenly divisible by 500, print a message
+            m.print_message(nd)
+
+        # Save the results to the file
+        dd.io.save(test_hfile, {
+            'frequencies': frequencies,
+            'title': all_title,
+            'content': all_content
+            })
+
+    def validate(self, **kwargs):
+
+        train_file = kwargs.get('hfile', self.hfile)
+        validation_file = kwargs.get('validation_file', self.validation_file)
+
+        # Read data
+        frequencies = dd.io.load(train_file, '/frequencies')
+
+        # Remove the output file if there is an old one
+        try:
+            os.remove(validation_file)
+        except OSError:
+            pass
+
+        # Validate
+
+        predicted_positives = 0
+        actual_positives = 0
+        true_positives = 0
+
+        lf = len(frequencies)
+        m = IterMessage(lf, 'tags generated', 1000)
+
+        with open(validation_file, 'a') as vf:
+
+            for x, r in zip(frequencies, range(lf)):
+                actual_tags = x['tags']
+                predicted_tags = [k for k in x['all'].keys()][:2]
+
+                predicted_positives += 2
+                actual_positives += len(actual_tags)
+
+                vf.write('{} -> {}\n'.format(actual_tags, predicted_tags))
+                m.print_message(r)
+
+                for t in actual_tags:
+                    if t in predicted_tags:
+                        true_positives += 1
+
+        precision = true_positives / predicted_positives
+        recall = true_positives / actual_positives
+        f1 = 2 * precision * recall / (precision + recall)
+
+        print('precision: {}'.format(precision))
+        print('recall: {}'.format(recall))
+        print('F1: {}'.format(f1))
+
+        return f1, precision, recall
+
+
+
