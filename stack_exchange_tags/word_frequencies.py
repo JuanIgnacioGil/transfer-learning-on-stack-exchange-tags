@@ -18,6 +18,8 @@ class WordFrequencies:
         self.test_json = kwargs.get('test_json')
         self.test_csv_file = kwargs.get('test_csv_file')
 
+        self.no_tags = []
+
     def generate_word_frequencies(self, **kwargs):
 
         hfile = kwargs.get('hfile', self.hfile)
@@ -144,6 +146,17 @@ class WordFrequencies:
             'content': all_content
             })
 
+    def generate_no_tags(self, **kwargs):
+
+        train_file = kwargs.get('hfile', self.hfile)
+
+        # Read data
+        content = dd.io.load(train_file, '/content')
+        tags = dd.io.load(train_file, '/tags')
+
+        # Generate a list of words that are no tags
+        self.no_tags = [w for w in content if w not in tags]
+
     def validate(self, **kwargs):
 
         train_file = kwargs.get('hfile', self.hfile)
@@ -173,7 +186,7 @@ class WordFrequencies:
             for x, r in zip(frequencies, range(lf)):
                 actual_tags = x['tags']
 
-                predicted_tags = self.predict_tags(x, possible_tags)
+                predicted_tags = self.predict_tags(x)
 
                 predicted_positives += 2
                 actual_positives += len(actual_tags)
@@ -227,19 +240,18 @@ class WordFrequencies:
             writer.writerow(['id', 'tags'])
 
             for x, r in zip(frequencies, range(lf)):
-                predicted_tags = self.predict_tags(x, possible_tags)
+                predicted_tags = self.predict_tags(x)
                 row_id = str(se_id[r])
                 writer.writerow([row_id, ' '.join(predicted_tags)])
                 m.print_message(r)
 
-    @classmethod
-    def predict_tags(cls, x, possible_tags, **kwargs):
+    def predict_tags(self, x,  **kwargs):
 
         tags = []
         words = x['all'].most_common()
 
         for w in words:
-            if w[0] in possible_tags:
+            if w[0] not in self.no_tags:
                 tags.append(w[0])
 
             if len(tags) == 2:
