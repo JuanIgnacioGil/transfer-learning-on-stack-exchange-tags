@@ -151,6 +151,7 @@ class WordFrequencies:
 
         # Read data
         frequencies = dd.io.load(train_file, '/frequencies')
+        possible_tags = dd.io.load(train_file, '/tags')
 
         # Remove the output file if there is an old one
         try:
@@ -171,9 +172,8 @@ class WordFrequencies:
 
             for x, r in zip(frequencies, range(lf)):
                 actual_tags = x['tags']
-                words = x['all'].most_common(2)[:2]
 
-                predicted_tags = [k[0] for k in words]
+                predicted_tags = self.predict_tags(x, possible_tags)
 
                 predicted_positives += 2
                 actual_positives += len(actual_tags)
@@ -199,10 +199,12 @@ class WordFrequencies:
 
         train_file = kwargs.get('test_hfile', self.test_hfile)
         submission = kwargs.get('submission', self.submission)
+        tags_file = kwargs.get('tags_file', self.hfile)
         test_csv_file = kwargs.get('test_csv_file', self.test_csv_file)
 
         # Read data
         frequencies = dd.io.load(train_file, '/frequencies')
+        possible_tags = dd.io.load(tags_file, '/tags')
 
         # Read the csv file
         physics_table = pd.read_csv(test_csv_file, header=0, index_col='id')
@@ -225,12 +227,27 @@ class WordFrequencies:
             writer.writerow(['id', 'tags'])
 
             for x, r in zip(frequencies, range(lf)):
-
-                words = x['all'].most_common(2)[:2]
-                predicted_tags = [k[0] for k in words]
-
+                predicted_tags = self.predict_tags(x, possible_tags)
                 row_id = str(se_id[r])
                 writer.writerow([row_id, ' '.join(predicted_tags)])
                 m.print_message(r)
+
+    @classmethod
+    def predict_tags(cls, x, possible_tags, **kwargs):
+
+        tags = []
+        words = x['all'].most_common()
+
+        for w in words:
+            if w[0] in possible_tags:
+                tags.append(w[0])
+
+            if len(tags) == 2:
+                break
+
+        if len(tags) < 2:
+            tags += [w[0] for w in words[:2-len(tags)]]
+
+        return tags
 
 
