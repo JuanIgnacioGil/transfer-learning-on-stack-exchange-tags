@@ -14,8 +14,10 @@ s = WF(
 
 #s.generate_predictors_test()
 #s.generate_word_test()
+#s.generate_word_frequencies()
+#s.generate_word_test()
 
-s.generate_no_tags()
+#s.generate_no_tags()
 
 #Validate
 #s.validate()

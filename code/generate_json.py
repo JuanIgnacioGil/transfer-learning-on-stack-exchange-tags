@@ -3,7 +3,10 @@
 
 import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
 import json
-from generate_wordlists import *
+from stack_exchange_tags.generate_wordlists import GenerateWordLists as Wl
+from stack_exchange_tags.iter_message import IterMessage
+import os
+
 
 # Input data files are available in the "../input/" directory.
 biologyTable = pd.read_csv('../data/biology.csv', header=0)
@@ -13,6 +16,14 @@ diyTable = pd.read_csv('../data/diy.csv', header=0)
 roboticsTable = pd.read_csv('../data/robotics.csv', header=0)
 travelTable = pd.read_csv('../data/travel.csv', header=0)
 physicsTable = pd.read_csv('../data/test.csv', header=0)
+
+json_file = '../data/data.json'
+
+# Remove the output file if there is an old one
+try:
+    os.remove(json_file)
+except OSError:
+    pass
 
 
 # clean data using BeautifulSoup and Regex. First define functions:
@@ -32,21 +43,25 @@ topics = ['biology', 'cooking', 'crypto', 'diy', 'robotics', 'travel']
 
 for table, top in zip(learningTables, topics):
     num_records = table.shape[0]
-    for record in table.index:
+    m = IterMessage(num_records, 'processed', 1000)
+
+    for record, nr in zip(table.index, range(num_records)):
 
         this_record = {
             'topic': top,
-            'title': titles_to_wordlist(table["title"][record], remove_stopwords=True),
-            'content':  content_to_wordlist(table["content"][record], remove_stopwords=True),
-            'tags': tags_to_wordlist(table["tags"][record])
+            'title': Wl.noun_list(table["title"][record]),
+            'content':  Wl.noun_list(table["content"][record]),
+            'tags': Wl.tags_to_wordlist(table["tags"][record])
         }
 
         data.append(this_record)
 
         # If the index is evenly divisible by 1000, print a message
-        if (record + 1) % 1000 == 0:
-            print("Question %d of %d\n" % (record + 1, num_records))
+        m.print_message(nr)
+
 
 # Convert to json
-with open('../data/data.json', 'w') as outfile:
+with open(json_file, 'w') as outfile:
     json.dump(data, outfile,sort_keys=True, indent=4)
+
+

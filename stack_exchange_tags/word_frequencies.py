@@ -32,9 +32,9 @@ class WordFrequencies:
             pass
 
         # Read the json file
-        with open(json_data):
-            data = json.load(json_data)
-            json_data.close()
+        with open(json_data) as d:
+            data = json.load(d)
+            d.close()
 
         l_data = len(data)
 

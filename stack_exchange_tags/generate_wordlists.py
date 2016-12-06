@@ -1,6 +1,8 @@
 from bs4 import BeautifulSoup
 import re
+import nltk
 from nltk.corpus import stopwords
+from stack_exchange_tags.iter_message import IterMessage
 
 
 class GenerateWordLists:
@@ -60,3 +62,22 @@ class GenerateWordLists:
         #
         # 2. Return a list of words
         return words
+
+    # splits tags into list of words
+    @staticmethod
+    def tags_to_wordlist(tags):
+        # Tags are already in lower case and grouped
+        # by using hyphens to incidate multiple words
+        #
+        # 1. Split the tags
+        words = tags.split()
+        #
+        # 2. Return a list of words
+        return words
+
+    @staticmethod
+    def noun_list(text):
+        words = nltk.word_tokenize(text)
+        pos_text = nltk.pos_tag(words, tagset='universal')
+        nouns = [w[0].lower() for w in pos_text if w[1] in ['NOUN']]
+        return nouns
