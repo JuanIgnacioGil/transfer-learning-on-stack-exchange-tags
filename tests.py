@@ -1,22 +1,6 @@
 import os
 wdir = os.path.dirname(__file__)
-from stack_exchange_tags.word_frequencies import WordFrequencies as WF
+from stack_exchange_tags.pos_analysis import POSAnalysis as PA
 
-s = WF(
-    hfile = os.path.join(wdir,'data/frequencies.h5'),
-    json_data = os.path.join(wdir,'data/data.json'),
-    submission = os.path.join(wdir,'data/submission.csv'),
-    validation_file = os.path.join(wdir, 'data/frequencies_validation_output.csv'),
-    test_hfile = os.path.join(wdir, 'data/test.h5'),
-    test_json = os.path.join(wdir, 'data/test.json'),
-    test_csv_file = os.path.join(wdir, 'data/test.csv'),
-)
-
-#s.generate_predictors_test()
-#s.generate_word_test()
-
-#Validate
-#s.validate()
-
-#Test
-s.generate_submission()
+s = PA(os.path.join(wdir,'data/pos_freq.h5'))
+s.generate_hdf5_file('biology', os.path.join(wdir,'data/biology.csv'))
