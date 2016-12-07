@@ -1,6 +1,7 @@
 import pandas as pd
 import nltk
 from stack_exchange_tags.iter_message import IterMessage
+import deepdish as dd
 
 class POSAnalysis:
 
@@ -33,9 +34,9 @@ class POSAnalysis:
 
         # Save data
         # Save the results to the file
-        store = pd.HDFStore(self.hdf5_file)
-        store[topic] = data
-        store.close()
+        dd.io.save(self.hdf5_file, {
+            topic: data,
+        })
 
     @classmethod
     def pos_and_frequencies(cls, text):
