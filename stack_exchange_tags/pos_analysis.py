@@ -1,49 +1,67 @@
 import pandas as pd
 import nltk
+import os
 from stack_exchange_tags.iter_message import IterMessage
-import deepdish as dd
 
 class POSAnalysis:
 
-    def __init__(self, hdf5_file):
+    def __init__(self, hdf5_file, data_folder):
 
         self.hdf5_file = hdf5_file
+        self.data_folder = data_folder
 
 
-    def generate_hdf5_file(self, topic, csv_file):
+    def generate_hdf5_file(self, topics, key):
 
-        # Read csv file
-        table = pd.read_csv(csv_file, header=0)
-        n_records = len(table.index)
         data = []
-        m = IterMessage(n_records, 'records processed', 500)
 
-        # Generate POS and frequencies
-        for record, nr in zip(table.index, range(n_records)):
+        for topic in ['biology', 'cooking', 'crypto', 'robotics']:
 
-            this_record = dict()
+            print(topic)
+            csv_file = os.path.join(self.data_folder,'{}.csv'.format(topic))
 
-            this_record['title'] = self.pos_and_frequencies(table['title'][record])
-            this_record['content'] = self.pos_and_frequencies(table['content'][record])
-            this_record['tags'] = self.pos_and_frequencies(table['tags'][record])
+            # Read csv file
+            table = pd.read_csv(csv_file, header=0)
+            n_records = len(table.index)
+            data = []
+            m = IterMessage(n_records, 'records processed', 500)
 
-            data.append(this_record)
+            #Empty dataframe for the records
+            data = pd.DataFrame(columns = {'id', 'topic', 'word', 'section', 'POS', 'frequency'})
 
-            # If the index is evenly divisible by 500, print a message
-            m.print_message(nr)
+            # Generate POS and frequencies
+            for record, nr in zip(table.index, range(n_records)):
+
+                id = table['id'][record]
+
+                # title
+                title = table['title'][record]
+                data.append(self.pos_and_frequencies(table['title'][record], id, 'title', topic))
+                data.append(self.pos_and_frequencies(table['content'][record], id, 'content', topic))
+                data.append(self.pos_and_frequencies(table['tags'][record], id, 'tags', topic))
+
+                # If the index is evenly divisible by 500, print a message
+                m.print_message(nr)
 
         # Save data
         # Save the results to the file
-        dd.io.save(self.hdf5_file, {
-            topic: data,
-        })
+        data.to_hdf(self.hdf5_file, key)
 
     @classmethod
-    def pos_and_frequencies(cls, text):
+    def pos_and_frequencies(cls, text, id, section, topic):
         words = nltk.word_tokenize(text.lower())
         pos_text = nltk.pos_tag(words, tagset='universal')
         freq = nltk.ConditionalFreqDist(pos_text)
-        return freq
+
+        all_words = freq.conditions()
+        output = []
+
+        for w in all_words:
+            pos = freq[w].most_common()[0][0]
+            frequency = freq[w].most_common()[0][1]
+            output.append([id, topic, w, section, pos, frequency])
+
+        return pd.DataFrame(output, columns = {'id', 'topic', 'word', 'section', 'POS', 'frequency'})
 
 
 
