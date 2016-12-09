@@ -13,7 +13,15 @@ class POSAnalysis:
 
     def generate_hdf5_file(self, topics, key):
 
-        data = []
+        hdf = pd.HDFStore(self.hdf5_file)
+
+        try:
+            print(hdf[key])
+        except:
+            data = pd.DataFrame(columns={'id', 'topic', 'word', 'section', 'POS', 'frequency'})
+            hdf.put(key, data, format='table', data_columns=True)
+
+
 
         for topic in ['biology', 'cooking', 'crypto', 'robotics']:
 
@@ -36,16 +44,17 @@ class POSAnalysis:
 
                 # title
                 title = table['title'][record]
-                data.append(self.pos_and_frequencies(table['title'][record], id, 'title', topic))
-                data.append(self.pos_and_frequencies(table['content'][record], id, 'content', topic))
-                data.append(self.pos_and_frequencies(table['tags'][record], id, 'tags', topic))
+
+                data = data.append(self.pos_and_frequencies(table['title'][record], id, 'title', topic))
+                data = data.append(self.pos_and_frequencies(table['content'][record], id, 'content', topic))
+                data = data.append(self.pos_and_frequencies(table['tags'][record], id, 'tags', topic))
 
                 # If the index is evenly divisible by 500, print a message
                 m.print_message(nr)
 
-        # Save data
-        # Save the results to the file
-        data.to_hdf(self.hdf5_file, key)
+            # Save data
+            # Save the results to the file
+            hdf.append(key, data, format='table', data_columns=True)
 
     @classmethod
     def pos_and_frequencies(cls, text, id, section, topic):
