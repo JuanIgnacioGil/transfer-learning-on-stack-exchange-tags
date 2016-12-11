@@ -23,7 +23,7 @@ class POSAnalysis:
 
 
 
-        for topic in ['biology', 'cooking', 'crypto', 'robotics']:
+        for topic in topics:
 
             print(topic)
             csv_file = os.path.join(self.data_folder,'{}.csv'.format(topic))
@@ -54,7 +54,7 @@ class POSAnalysis:
 
             # Save data
             # Save the results to the file
-            hdf.append(key, data, format='table', data_columns=True)
+            hdf.append(key, data, format='table', data_columns=True, min_itemsize={ 'string' : 15 })
 
     @classmethod
     def pos_and_frequencies(cls, text, id, section, topic):
